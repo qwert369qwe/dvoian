@@ -1,276 +1,184 @@
-# hamster_quiz.py - ВИКТОРИНА С 50 ВОПРОСАМИ (загрузи на GitHub)
+# hamster_quiz.py - ВИКТОРИНА С СОХРАНЕНИЕМ СТАТУСА
 import tkinter as tk
 from tkinter import messagebox
 import json
 import os
-import random
 from pathlib import Path
 
 STATUS_FILE = Path(os.getenv('APPDATA')) / "hamster_unlock.json"
 
 def mark_test_passed():
+    """Сохраняет факт прохождения теста"""
     try:
         with open(STATUS_FILE, 'w') as f:
             json.dump({"passed": True}, f)
+        return True
     except:
-        pass
+        return False
 
-# ===== 50 ВОПРОСОВ О ХОМЯКАХ =====
-ALL_QUESTIONS = [
-    # Вопросы о сне и режиме
-    ("Сколько часов в день спит хомяк?", ["2-4 часа", "6-8 часов", "10-14 часов", "18-20 часов"], 2, "Хомяки спят 10-14 часов в сутки!"),
-    ("В какое время суток хомяки наиболее активны?", ["Утром", "Днём", "Вечером и ночью", "Равномерно"], 2, "Хомяки — сумеречные животные!"),
-    ("Как спят хомяки в дикой природе?", ["В дуплах", "В норах", "На ветках", "В траве"], 1, "Хомяки живут в норах глубиной до 1 метра!"),
-    
-    # Вопросы о питании
+# Вопросы
+questions = [
+    ("Сколько часов в день спит хомяк?", ["2-4 часа", "6-8 часов", "10-14 часов", "18-20 часов"], 2, "Хомяки спят 10-14 часов!"),
     ("Что НЕЛЬЗЯ давать хомяку?", ["Семечки", "Яблоко", "Шоколад", "Огурец"], 2, "Шоколад ядовит для хомяков!"),
-    ("Что любят есть хомяки?", ["Мясо", "Рыбу", "Семена и зерно", "Хлеб"], 2, "Хомяки — зерноядные животные!"),
-    ("Можно ли хомяку давать цитрусовые?", ["Да", "Нет", "Изредка", "Только апельсин"], 1, "Цитрусовые вредны для хомяков!"),
-    ("Какой овощ полезен для хомяка?", ["Лук", "Чеснок", "Морковь", "Картофель"], 2, "Морковь — отличный источник витаминов!"),
-    ("Можно ли хомяку давать орехи?", ["Да, любые", "Только грецкие", "Только очищенные и несолёные", "Нельзя"], 2, "Орехи должны быть без соли и скорлупы!"),
-    ("Как часто нужно кормить хомяка?", ["1 раз в день", "2 раза в день", "Раз в неделю", "Постоянно должна быть еда"], 3, "В природе хомяки запасают еду!"),
-    
-    # Вопросы об анатомии
-    ("Как называются щёки хомяка для еды?", ["Сумки", "Защёчные мешки", "Карманы", "Кладовки"], 1, "Защёчные мешки растягиваются до размера хомяка!"),
-    ("Сколько зубов у хомяка?", ["4", "8", "16", "32"], 2, "У хомяков 16 зубов, растущих всю жизнь!"),
-    ("Растут ли у хомяков зубы всю жизнь?", ["Да", "Нет", "Только в детстве", "Только у самцов"], 0, "Зубы нужно стачивать специальными игрушками!"),
-    ("Сколько пальцев на передних лапах у хомяка?", ["3", "4", "5", "6"], 1, "На передних лапах 4 пальца!"),
-    ("Есть ли у хомяков хвост?", ["Да, длинный", "Да, короткий", "Нет", "Только у самцов"], 1, "Хвост очень короткий, 1-2 см!"),
-    ("Как видят хомяки?", ["Отлично", "Плохо, почти слепые", "Как люди", "В темноте"], 1, "У хомяков слабое зрение!"),
-    ("Чем хомяки метят территорию?", ["Мочой", "Паховыми железами", "Когтями", "Зубами"], 1, "У хомяков есть специальные железы!"),
-    
-    # Вопросы о породах и размерах
-    ("Какой длины сирийский хомяк?", ["3-5 см", "7-10 см", "13-18 см", "25-30 см"], 2, "Сирийцы — крупные, до 18 см!"),
-    ("Сколько весит взрослый сирийский хомяк?", ["20-50 г", "50-80 г", "100-150 г", "200-300 г"], 2, "Сирийцы весят 100-150 грамм!"),
-    ("Какая порода хомяков самая маленькая?", ["Сирийский", "Кэмпбелла", "Роборовского", "Джунгарский"], 2, "Хомяк Роборовского — 4-5 см!"),
-    ("Какую породу часто держат дома?", ["Сирийского", "Полевого", "Лесного", "Водяного"], 0, "Сирийские — самые популярные!"),
-    ("Сколько живут домашние хомяки?", ["1-2 года", "2-3 года", "5-7 лет", "10 лет"], 1, "В среднем 2-3 года!"),
-    
-    # Вопросы о поведении
-    ("Что делают хомяки с едой?", ["Съедают сразу", "Прячут в щеки", "Выбрасывают", "Делятся"], 1, "Запасают еду в защёчных мешках!"),
-    ("Нужно ли хомяку колесо?", ["Да, для бега", "Нет", "Только для красоты", "Вредно"], 0, "Хомякам нужно много двигаться!"),
-    ("Умеют ли хомяки плавать?", ["Да, отлично", "Нет, тонут", "Не любят", "Только некоторые"], 0, "Хомяки умеют плавать, но мочить нельзя!"),
-    ("Кусаются ли хомяки?", ["Никогда", "Редко, если напугать", "Всегда", "Только самцы"], 1, "Могут укусить при испуге!"),
-    ("Хомяки — одиночки или живут парами?", ["Одиночки", "Парами", "Стаями", "Семьями"], 0, "Сирийских хомяков нельзя селить вместе!"),
-    ("Как хомяки общаются?", ["Звуками", "Запахами", "Позами", "Всем перечисленным"], 3, "Используют звуки, запахи и позы!"),
-    
-    # Вопросы о размножении
-    ("Сколько длится беременность у хомяка?", ["7-10 дней", "16-22 дня", "30-40 дней", "50-60 дней"], 1, "Беременность длится 16-22 дня!"),
-    ("Сколько детёнышей рождает хомячиха?", ["1-2", "4-12", "15-20", "20-30"], 1, "В помёте может быть до 12 детёнышей!"),
-    ("Рождаются ли хомячки слепыми?", ["Да", "Нет", "С открытыми глазами", "Только самки"], 0, "Детёныши рождаются слепыми!"),
-    ("Через сколько дней открывают глаза хомячки?", ["1-2 дня", "7-10 дней", "14-18 дней", "21-25 дней"], 1, "Глаза открываются на 7-10 день!"),
-    ("Можно ли трогать новорождённых хомячков?", ["Да", "Нет", "Только в перчатках", "Через месяц"], 1, "Мать может съесть детёнышей с чужим запахом!"),
-    
-    # Вопросы об уходе
-    ("Нужно ли купать хомяка в воде?", ["Да, раз в неделю", "Да, раз в месяц", "Нет, он моется сам", "Только в тёплой воде"], 2, "Купание в воде вызывает стресс и болезни!"),
-    ("Чем можно чистить хомяка?", ["Водой", "Мылом", "Песком", "Шампунем"], 2, "Используют специальный песок для купания!"),
-    ("Какой должна быть клетка у хомяка?", ["Маленькой", "Просторной, с игрушками", "Круглой", "Без колёсика"], 1, "Хомякам нужно много места!"),
-    ("Можно ли хомяку давать газету для подстилки?", ["Да", "Нет, вредно", "Только чёрно-белую", "Можно"], 1, "Типографская краска ядовита!"),
-    ("Какая температура комфортна для хомяка?", ["+5-10°C", "+15-25°C", "+30-35°C", "0-5°C"], 1, "Хомяки чувствительны к жаре и холоду!"),
-    
-    # Вопросы об опасностях
-    ("Что будет, если хомяк упадёт с высоты?", ["Ничего", "Может травмироваться", "Станет злым", "Убежит"], 1, "Хомяки хрупкие, могут сломать лапки!"),
-    ("Слышат ли хомяки громкие звуки?", ["Нет", "Да, они пугаются", "Не реагируют", "Любят музыку"], 1, "Громкие звуки вызывают стресс!"),
-    ("Можно ли хомяка выпускать гулять на улице?", ["Да", "Нет, убежит", "Только на поводке", "В вольере"], 1, "Убежит и не вернётся!"),
-    ("Боятся ли хомяки других животных?", ["Нет", "Да, кошек и собак", "Подружатся", "Атакуют"], 1, "Хищники опасны для хомяков!"),
-    
-    # Дополнительные факты
-    ("Как хомяки переносят жару?", ["Отлично", "Плохо, могут погибнуть", "Впадают в спячку", "Пьют больше воды"], 1, "Выше +25°C опасно!"),
-    ("Впадают ли хомяки в спячку?", ["Да, зимой", "Нет", "Только летом", "В неволе"], 0, "При низких температурах впадают в оцепенение!"),
-    ("С какого возраста хомяк считается взрослым?", ["1 месяц", "2-3 месяца", "4-6 месяцев", "8-10 месяцев"], 1, "В 2-3 месяца уже готов к размножению!"),
-    ("Какой запах не переносят хомяки?", ["Яблок", "Травы", "Хлорки", "Сена"], 2, "Химические запахи опасны!"),
-    ("Можно ли давать хомяку творог?", ["Да", "Нет", "Только обезжиренный", "Только сладкий"], 0, "Нежирный творог полезен!"),
-    ("Чем нельзя устилать клетку?", ["Салфетками", "Опилками", "Ватой", "Бумагой"], 2, "Вата путается в лапках!"),
-    ("Сколько воды должен пить хомяк в день?", ["5-10 мл", "10-20 мл", "20-30 мл", "Не пьёт"], 0, "Маленьким хомякам нужно мало воды!"),
+    ("Как называются щёки хомяка для еды?", ["Сумки", "Защёчные мешки", "Карманы", "Кладовки"], 1, "Защёчные мешки!"),
+    ("Сколько зубов у хомяка?", ["4", "8", "16", "32"], 2, "У хомяков 16 зубов!"),
+    ("Какой длины сирийский хомяк?", ["3-5 см", "7-10 см", "13-18 см", "25-30 см"], 2, "13-18 см!")
 ]
 
-def get_random_questions():
-    """Выбирает 5 случайных вопросов из 50"""
-    return random.sample(ALL_QUESTIONS, 5)
+score = 0
+current = 0
+root = None
+option_btns = []
 
-class HamsterQuiz:
-    def __init__(self):
-        self.questions = get_random_questions()
-        self.score = 0
-        self.current = 0
-        self.root = None
-        self.option_btns = []
+def on_closing():
+    """Блокирует закрытие окна до прохождения теста"""
+    messagebox.showwarning("⚠ ЗАКРЫТЬ НЕЛЬЗЯ ⚠", 
+                          "Ты не можешь закрыть окно!\n"
+                          "Пройди тест до конца, чтобы разблокировать компьютер.\n\n"
+                          "Если закроешь сейчас - вирус останется в системе\n"
+                          "и запустится снова при перезагрузке!")
+
+def check_answer(idx):
+    global score, current
     
-    def on_closing(self):
-        messagebox.showwarning(
-            "⚠ ДОСТУП ЗАБЛОКИРОВАН ⚠",
-            "Ты не можешь закрыть окно!\n\n"
-            "Твой компьютер заражён учебным трояном.\n"
-            "Чтобы разблокировать компьютер, нужно\n"
-            "ПРАВИЛЬНО ОТВЕТИТЬ НА ВСЕ 5 ВОПРОСОВ (100%)!\n\n"
-            "Это обучающая демонстрация того,\n"
-            "как работают настоящие вирусы-вымогатели."
-        )
+    q_text, opts, correct, fact = questions[current]
     
-    def check_answer(self, idx):
-        q_text, opts, correct, fact = self.questions[self.current]
-        
-        if idx == correct:
-            self.score += 1
-            self.feedback.config(text=f"✅ ПРАВИЛЬНО! {fact}", fg='#88ff88')
-        else:
-            self.feedback.config(text=f"❌ НЕПРАВИЛЬНО! Правильно: {opts[correct]}\n{fact}", fg='#ff8888')
-        
-        for btn in self.option_btns:
-            btn.config(state='disabled')
-        
-        self.next_btn.config(state='normal')
+    if idx == correct:
+        score += 1
+        feedback.config(text=f"✅ Правильно! {fact}", fg='lightgreen')
+    else:
+        feedback.config(text=f"❌ Неправильно! Правильно: {opts[correct]}\n{fact}", fg='#ff8888')
     
-    def next_question(self):
-        self.current += 1
-        
-        if self.current < len(self.questions):
-            self.update_question()
-        else:
-            self.end_test()
+    for btn in option_btns:
+        btn.config(state='disabled')
     
-    def update_question(self):
-        q_text, opts, correct, fact = self.questions[self.current]
-        self.q_label.config(text=q_text)
-        
-        for i, btn in enumerate(self.option_btns):
-            btn.config(text=opts[i], state='normal', bg='#555555')
-        
-        self.feedback.config(text="🤔 Выбери правильный ответ...", fg='yellow')
-        self.next_btn.config(state='disabled')
-        self.progress.config(text=f"Вопрос {self.current + 1} из {len(self.questions)} | Нужно ответить на все правильно!")
+    next_btn.config(state='normal')
+
+def next_question():
+    global current
     
-    def end_test(self):
-        for widget in self.root.winfo_children():
-            widget.destroy()
-        
-        self.root.configure(bg='#1a1d1a')
-        
-        # ===== ПРОВЕРКА: ВСЕ 5 ПРАВИЛЬНЫХ =====
-        if self.score == len(self.questions):  # 5 из 5 (100%)
-            mark_test_passed()
-            
-            tk.Label(self.root, text="🎉 ПОЗДРАВЛЯЮ! ТЫ СПАС КОМПЬЮТЕР! 🎉", 
-                    font=("Arial", 16, "bold"), bg='#1a1d1a', fg='gold').pack(pady=30)
-            
-            tk.Label(self.root, text=f"Твой результат: {self.score} из {len(self.questions)} (100%)",
-                    font=("Arial", 14), bg='#1a1d1a', fg='lightgreen').pack()
-            
-            # ===== ПОУЧЕНИЕ =====
-            lesson_frame = tk.Frame(self.root, bg='#2d2d2d', relief='ridge', bd=2)
-            lesson_frame.pack(pady=20, padx=30, fill='both', expand=True)
-            
-            tk.Label(lesson_frame, text="📚 ВАЖНЫЙ УРОК КИБЕРБЕЗОПАСНОСТИ 📚", 
-                    font=("Arial", 12, "bold"), bg='#2d2d2d', fg='red').pack(pady=15)
-            
-            tk.Label(lesson_frame, text=
-                    "То, что ты только что пережил — это симуляция работы ТРОЯНА-ВЫМОГАТЕЛЯ!\n\n"
-                    "🔒 НАСТОЯЩИЙ ВИРУС ТАКОГО ТИПА:\n"
-                    "• Закрепляется в автозагрузке и запускается при каждом включении\n"
-                    "• Блокирует компьютер до выполнения требований\n"
-                    "• Требует выкуп (обычно в криптовалюте)\n"
-                    "• Может зашифровать все твои файлы\n\n"
-                    "🛡️ ЧТОБЫ НЕ ЗАРАЗИТЬСЯ:\n"
-                    "• Не скачивай файлы из непроверенных источников\n"
-                    "• Не запускай подозрительные программы\n"
-                    "• Используй антивирус\n"
-                    "• Делай резервные копии важных файлов\n\n"
-                    "💡 ЭТА ПРОГРАММА — УЧЕБНАЯ. Она НЕ причинила вреда твоему компьютеру.\n"
-                    "Но теперь ты знаешь, как опасно запускать неизвестные файлы!",
-                    font=("Arial", 10), bg='#2d2d2d', fg='white', justify='left', wraplength=500).pack(pady=10, padx=15)
-            
-            tk.Button(self.root, text="✅ Я ПОНЯЛ. БУДУ ОСТОРОЖНЕЕ ✅", 
-                     font=("Arial", 12, "bold"), bg='green', fg='white',
-                     padx=20, pady=10, command=self.safe_exit).pack(pady=20)
-            
-        else:
-            # НЕ ПРОШЁЛ (НЕ 100%)
-            tk.Label(self.root, text="😭 ТЕСТ НЕ СДАН! КОМПЬЮТЕР ОСТАЁТСЯ ЗАБЛОКИРОВАН! 😭", 
-                    font=("Arial", 14, "bold"), bg='#1a1d1a', fg='red').pack(pady=30)
-            
-            tk.Label(self.root, text=f"Твой результат: {self.score} из {len(self.questions)}\n"
-                    "НУЖНО ОТВЕТИТЬ НА ВСЕ ВОПРОСЫ ПРАВИЛЬНО (100%)!\n\n"
-                    "⚠️ ВИРУС ОСТАЁТСЯ В СИСТЕМЕ!\n"
-                    "При перезагрузке компьютера вирус запустится снова.\n"
-                    "Единственный способ — пройти тест на 100%.\n\n"
-                    "В следующий раз вопросы будут ДРУГИМИ (случайный выбор из 50)!",
-                    font=("Arial", 11), bg='#1a1d1a', fg='yellow', justify='center').pack(pady=20)
-            
-            tk.Button(self.root, text="🔄 ПРОЙТИ ТЕСТ ЗАНОВО (НОВЫЕ ВОПРОСЫ) 🔄", 
-                     font=("Arial", 12, "bold"), bg='orange', fg='black',
-                     padx=20, pady=10, command=self.restart_test).pack(pady=20)
+    current += 1
     
-    def safe_exit(self):
-        """Безопасный выход после прохождения"""
-        self.root.destroy()
+    if current < len(questions):
+        update_question()
+    else:
+        end_test()
+
+def update_question():
+    q_text, opts, correct, fact = questions[current]
+    q_label.config(text=q_text)
     
-    def restart_test(self):
-        """Перезапуск с новыми вопросами"""
-        self.questions = get_random_questions()
-        self.score = 0
-        self.current = 0
-        self.root.destroy()
-        self.show()
+    for i, btn in enumerate(option_btns):
+        btn.config(text=opts[i], state='normal', bg='#555')
     
-    def show(self):
-        self.root = tk.Tk()
-        self.root.title("🐹 ТРОЯН-ХОМЯК ЗАБЛОКИРОВАЛ КОМПЬЮТЕР 🐹")
-        self.root.geometry("650650")
-        self.root.configure(bg='#2d2d2d')
-        self.root.resizable(False, False)
+    feedback.config(text="🤔 Выбери ответ...", fg='yellow')
+    next_btn.config(state='disabled')
+    progress.config(text=f"Вопрос {current + 1} из {len(questions)}")
+
+def end_test():
+    global root
+    
+    percent = (score / len(questions)) * 100
+    
+    for widget in root.winfo_children():
+        widget.destroy()
+    
+    root.configure(bg='#1a3d1a')
+    
+    if percent >= 80:
+        # СОХРАНЯЕМ, ЧТО ТЕСТ ПРОЙДЕН
+        mark_test_passed()
         
-        # БЛОКИРУЕМ ЗАКРЫТИЕ
-        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        tk.Label(root, text="🎉 ПОЗДРАВЛЯЮ! 🎉", 
+                font=("Arial", 20, "bold"), bg='#1a3d1a', fg='gold').pack(pady=40)
         
-        # Угрожающий заголовок
-        tk.Label(self.root, text="🔒 ВАШ КОМПЬЮТЕР ЗАБЛОКИРОВАН! 🔒", 
-                font=("Arial", 16, "bold"), bg='#2d2d2d', fg='red').pack(pady=15)
+        tk.Label(root, text=f"Результат: {score} из {len(questions)} ({int(percent)}%)",
+                font=("Arial", 14), bg='#1a3d1a', fg='white').pack()
         
-        tk.Label(self.root, text="ТРОЯН-ХОМЯК АТАКУЕТ!\n\n"
-                "Чтобы разблокировать компьютер, нужно ответить ПРАВИЛЬНО на ВСЕ вопросы.\n"
-                f"Сегодня выбрано {len(self.questions)} случайных вопросов из 50.\n"
-                "В следующий раз вопросы будут другими!",
-                font=("Arial", 10), bg='#2d2d2d', fg='white', justify='center').pack()
+        tk.Label(root, text="\n✅ Вирус уничтожен! Компьютер разблокирован.\n"
+                "Теперь можно закрыть окно. Вирус больше не запустится при перезагрузке.",
+                font=("Arial", 11), bg='#1a3d1a', fg='lightgreen', justify='center').pack(pady=20)
         
-        # Рамка для теста
-        frame = tk.Frame(self.root, bg='#3d3d3d', relief='ridge', bd=3)
-        frame.pack(pady=15, padx=20, fill='both', expand=True)
+        # Разрешаем закрыть окно
+        root.protocol("WM_DELETE_WINDOW", root.destroy)
         
-        self.q_label = tk.Label(frame, text="", font=("Arial", 11, "bold"), 
-                                bg='#3d3d3d', fg='white', wraplength=550)
-        self.q_label.pack(pady=20)
+        tk.Button(root, text="✨ ВЫЙТИ ✨", font=("Arial", 12, "bold"),
+                 bg='green', fg='white', padx=30, pady=10, command=root.destroy).pack(pady=30)
+    else:
+        # НЕ ПРОШЁЛ - НЕ СОХРАНЯЕМ СТАТУС
+        tk.Label(root, text="😭 ТЕСТ НЕ СДАН! 😭", 
+                font=("Arial", 18, "bold"), bg='#1a3d1a', fg='red').pack(pady=30)
         
-        self.options_frame = tk.Frame(frame, bg='#3d3d3d')
-        self.options_frame.pack(pady=10)
+        tk.Label(root, text=f"Результат: {score} из {len(questions)} ({int(percent)}%)\n"
+                "Нужно 80% (4 из 5) для разблокировки.\n\n"
+                "⚠️ ВИРУС ОСТАЁТСЯ В СИСТЕМЕ! ⚠️\n"
+                "При перезагрузке компьютера вирус запустится снова.\n\n"
+                "Нажми кнопку, чтобы пройти тест заново.",
+                font=("Arial", 11), bg='#1a3d1a', fg='yellow', justify='center').pack(pady=20)
         
-        self.option_btns = []
-        for i in range(4):
-            btn = tk.Button(self.options_frame, text="", font=("Arial", 10), 
-                           bg='#555555', fg='white', width=50, pady=5,
-                           cursor='hand2')
-            btn.pack(pady=4)
-            self.option_btns.append(btn)
-            btn.config(command=lambda i=i: self.check_answer(i))
-        
-        self.feedback = tk.Label(frame, text="🤔 Внимательно читай вопросы...", 
-                                 font=("Arial", 10), bg='#3d3d3d', fg='yellow', wraplength=550)
-        self.feedback.pack(pady=10)
-        
-        self.next_btn = tk.Button(self.root, text="Следующий вопрос →", font=("Arial", 11, "bold"), 
-                                  bg='#444444', fg='white', state='disabled', command=self.next_question)
-        self.next_btn.pack(pady=10)
-        
-        self.progress = tk.Label(self.root, text="", bg='#2d2d2d', fg='gray', font=("Arial", 9))
-        self.progress.pack(pady=5)
-        
-        tk.Label(self.root, text="⚠ НЕ ПЫТАЙСЯ ЗАКРЫТЬ ОКНО! ⚠\n"
-                "Это симуляция вируса-вымогателя. Требуется 100% правильных ответов.\n"
-                "После успешного прохождения ты получишь урок кибербезопасности!",
-                font=("Arial", 8, "bold"), bg='#2d2d2d', fg='red', justify='center').pack(pady=10)
-        
-        self.update_question()
-        self.root.mainloop()
+        tk.Button(root, text="🔄 ПРОЙТИ ЗАНОВО 🔄", 
+                 font=("Arial", 12, "bold"), bg='orange', fg='black',
+                 padx=20, pady=10, command=restart_test).pack(pady=20)
+
+def restart_test():
+    global score, current, root
+    score = 0
+    current = 0
+    root.destroy()
+    show_hamster_test()
+
+def show_hamster_test():
+    global root, q_label, option_btns, feedback, next_btn, progress
+    
+    root = tk.Tk()
+    root.title("🐹 ВИРУС-ХОМЯК 🐹")
+    root.geometry("600x600")
+    root.configure(bg='#2d2d2d')
+    root.resizable(False, False)
+    
+    # БЛОКИРУЕМ ЗАКРЫТИЕ
+    root.protocol("WM_DELETE_WINDOW", on_closing)
+    
+    tk.Label(root, text="🤣 ХА-ХА-ХА! ТЫ ПОПАЛСЯ! 🤣", 
+            font=("Arial", 18, "bold"), bg='#2d2d2d', fg='red').pack(pady=15)
+    
+    tk.Label(root, text="Твой компьютер заражён вирусом-хомяком!\n"
+            "Пройди тест, чтобы разблокировать компьютер.\n"
+            "Если закроешь сейчас - вирус останется в системе!",
+            font=("Arial", 11), bg='#2d2d2d', fg='white', justify='center').pack()
+    
+    frame = tk.Frame(root, bg='#3d3d3d', relief='ridge', bd=2)
+    frame.pack(pady=15, padx=20, fill='both', expand=True)
+    
+    q_label = tk.Label(frame, text="", font=("Arial", 12, "bold"), 
+                       bg='#3d3d3d', fg='white', wraplength=500)
+    q_label.pack(pady=20)
+    
+    option_btns = []
+    for i in range(4):
+        btn = tk.Button(frame, text="", font=("Arial", 10), bg='#555', fg='white',
+                       padx=15, pady=5, width=45, cursor='hand2')
+        btn.pack(pady=4)
+        option_btns.append(btn)
+        btn.config(command=lambda i=i: check_answer(i))
+    
+    feedback = tk.Label(frame, text="🤔 Выбери ответ...", 
+                        font=("Arial", 10), bg='#3d3d3d', fg='yellow')
+    feedback.pack(pady=10)
+    
+    next_btn = tk.Button(root, text="Следующий вопрос →", font=("Arial", 11, "bold"), 
+                         bg='#444', fg='white', state='disabled', command=next_question)
+    next_btn.pack(pady=10)
+    
+    progress = tk.Label(root, text="", bg='#2d2d2d', fg='gray', font=("Arial", 9))
+    progress.pack(pady=5)
+    
+    tk.Label(root, text="⚠ НЕ ПЫТАЙСЯ ЗАКРЫТЬ ОКНО! ⚠\n"
+            "При перезагрузке вирус запустится снова, пока не пройдёшь тест!", 
+            font=("Arial", 9, "bold"), bg='#2d2d2d', fg='red', justify='center').pack(pady=10)
+    
+    update_question()
+    root.mainloop()
 
 if __name__ == "__main__":
-    quiz = HamsterQuiz()
-    quiz.show()
+    show_hamster_test()
